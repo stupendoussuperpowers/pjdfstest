@@ -1246,6 +1246,7 @@ main(int argc, char *argv[])
 		char **tokens = malloc(10 * 128);
 		int i = 0;
 
+		tokens[i++] = "ignore";
 		char *token = strtok(buf, " ");
 
 		while (token != NULL && i < 10) {
@@ -1254,6 +1255,39 @@ main(int argc, char *argv[])
 		}
 
 		tokens[i] = NULL;
+
+		while ((ch = getopt(i - 1, tokens, "g:u:U:")) != -1) {
+			switch (ch) {
+			case 'g':
+				gids = optarg;
+				break;
+			case 'u':
+				uid = (int)strtol(optarg, &endp, 0);
+				if (*endp != '\0' && !isspace((unsigned char)*endp)) {
+					fprintf(stderr,
+						"invalid uid '%s' - number "
+						"expected\n",
+						optarg);
+					exit(1);
+				}
+				break;
+			case 'U':
+				umsk = (int)strtol(optarg, &endp, 0);
+				if (*endp != '\0' && !isspace((unsigned char)*endp)) {
+					fprintf(stderr,
+						"invalid umask '%s' - number "
+						"expected\n",
+						optarg);
+					exit(1);
+				}
+				break;
+			default:
+				break;
+			}
+		}
+
+		i -= optind;
+		tokens += optind;
 
 		if (i < 2)
 			continue;
