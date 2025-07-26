@@ -13,7 +13,7 @@ while [ "$maindir" != / ]; do
 	fi
 	maindir=$(cd $maindir/../; pwd)
 done
-fstest="${maindir}/pjdfstest"
+#fstest="${maindir}/pjdfstest"
 if ! . ${confdir}/conf; then
 	echo "not ok - could not source configuration file"
 	exit 1
@@ -36,13 +36,21 @@ requires_root()
 	esac
 }
 
-expect()
-{
+fstest() {
+    echo "$*" > /tmp/imfs_input && head -n 1 /tmp/imfs_output
+}
+
+expect() {
 	e="${1}"
 	shift
-	r=`${fstest} $* 2>/dev/null | tail -1`
-	echo "${r}" | ${GREP} -Eq '^'${e}'$'
-	if [ $? -eq 0 ]; then
+	echo "$*" > /tmp/imfs_input
+    output=`head -n 1 /tmp/imfs_output && head -n 1 /tmp/imfs_status`
+    # out=`tail -1 /tmp/imfs_output`
+    stat=`echo "$output" | tail -n 1`
+    mesg=`echo "$output" | head -n 1`
+    echo "${stat}" | ${GREP} -Eq '^'${e}'$'
+
+	if [ "$stat" -eq 0 ]; then
 		if [ -z "${todomsg}" ]; then
 			echo "ok ${ntest}"
 		else
@@ -50,14 +58,38 @@ expect()
 		fi
 	else
 		if [ -z "${todomsg}" ]; then
-			echo "not ok ${ntest} - tried '$*', expected ${e}, got ${r}"
+			echo "not ok ${ntest} - tried '$*', expected ${e}, got ${stat}"
 		else
 			echo "not ok ${ntest} # TODO ${todomsg}"
 		fi
 	fi
+	
 	todomsg=""
 	ntest=$((ntest+1))
 }
+
+# expect()
+# {
+# 	e="${1}"
+# 	shift
+# 	r=`${fstest} $* 2>/dev/null | tail -1`
+# 	echo "${r}" | ${GREP} -Eq '^'${e}'$'
+# 	if [ $? -eq 0 ]; then
+# 		if [ -z "${todomsg}" ]; then
+# 			echo "ok ${ntest}"
+# 		else
+# 			echo "ok ${ntest} # TODO ${todomsg}"
+# 		fi
+# 	else
+# 		if [ -z "${todomsg}" ]; then
+# 			echo "not ok ${ntest} - tried '$*', expected ${e}, got ${r}"
+# 		else
+# 			echo "not ok ${ntest} # TODO ${todomsg}"
+# 		fi
+# 	fi
+# 	todomsg=""
+# 	ntest=$((ntest+1))
+# }
 
 jexpect()
 {
