@@ -801,7 +801,7 @@ call_syscall(struct syscall_desc *scall, char *argv[])
 		break;
 #endif
 	case ACTION_MKFIFO:
-		rval = mkfifo(STR(0), (mode_t)NUM(1));
+		rval = imfs_mkfifo(CAGE_ID, STR(0), (mode_t)NUM(1));
 		break;
 #ifdef HAVE_MKFIFOAT
 	case ACTION_MKFIFOAT:
@@ -847,7 +847,7 @@ call_syscall(struct syscall_desc *scall, char *argv[])
 		}
 		switch (scall->sd_action) {
 		case ACTION_MKNOD:
-			rval = mknod(STR(0), ntype | NUM(2), dev);
+			rval = imfs_mknod(CAGE_ID, STR(0), ntype | NUM(2), dev);
 			break;
 #ifdef HAVE_MKNODAT
 		case ACTION_MKNODAT:
@@ -868,7 +868,7 @@ call_syscall(struct syscall_desc *scall, char *argv[])
 		rval = socket(AF_UNIX, SOCK_STREAM, 0);
 		if (rval < 0)
 			break;
-		rval = bind(rval, (struct sockaddr *)&sunx, sizeof(sunx));
+		rval = imfs_bind(CAGE_ID, rval, (struct sockaddr *)&sunx, sizeof(sunx));
 		break;
 	}
 #ifdef HAVE_BINDAT
@@ -928,7 +928,7 @@ call_syscall(struct syscall_desc *scall, char *argv[])
 		break;
 #endif
 	case ACTION_CHOWN:
-		rval = chown(STR(0), (uid_t)NUM(1), (gid_t)NUM(2));
+		rval = imfs_chown(CAGE_ID, STR(0), (uid_t)NUM(1), (gid_t)NUM(2));
 		break;
 	case ACTION_FCHOWN:
 		rval = fchown(NUM(0), (uid_t)NUM(1), (gid_t)NUM(2));
@@ -1163,7 +1163,7 @@ call_syscall(struct syscall_desc *scall, char *argv[])
 
 		serrno = err2str(errno);
 		fprintf(stderr, "%s returned %d\n", scall->sd_name, rval);
-		printf("%s\n", serrno);
+		fprintf(stderr, "%s\n", serrno);
 		// exit(1);
 		return 1;
 	}
@@ -1206,14 +1206,25 @@ set_gids(char *gids)
 	free(gidset);
 }
 
+FILE *pipefd[3];
+
+void
+sigint_handler(int sig)
+{
+	fclose(pipefd[0]);
+	fclose(pipefd[1]);
+	fclose(pipefd[2]);
+}
+
 int
 main(int argc, char *argv[])
 {
 	imfs_init();
 	struct syscall_desc *scall;
+
+	signal(SIGINT, sigint_handler);
+
 	unsigned int n;
-	char *gids, *endp;
-	int uid, umsk, ch;
 
 	printf("argc=%d, argv[0]=%s\n", argc, argv[0]);
 
@@ -1227,20 +1238,25 @@ main(int argc, char *argv[])
 
 	int fd = open(pipeinpath, O_RDWR);
 	FILE *pipe_in = fdopen(fd, "r");
+	pipefd[0] = pipe_in;
 
 	char buf[1024];
 
 	int out_fd = open(pipeoutpath, O_RDWR);
 	FILE *pipe_out = fdopen(out_fd, "w");
+	pipefd[1] = pipe_out;
 
 	int stat_fd = open(pipestatus, O_RDWR);
 	FILE *pipe_status = fdopen(stat_fd, "w");
+	pipefd[2] = pipe_status;
 
 	dup2(fileno(pipe_out), fileno(stdout));
 	setvbuf(stdout, NULL, _IOLBF, 0);
 
 	while (fgets(buf, sizeof(buf), pipe_in)) {
 		// printf("Received Command: %s", buf);
+		char *gids, *endp;
+		int uid, umsk, ch;
 		buf[strcspn(buf, "\n")] = '\0';
 
 		char **tokens = malloc(10 * 128);
@@ -1255,7 +1271,7 @@ main(int argc, char *argv[])
 		}
 
 		tokens[i] = NULL;
-
+		optind = 1;
 		while ((ch = getopt(i - 1, tokens, "g:u:U:")) != -1) {
 			switch (ch) {
 			case 'g':
@@ -1311,6 +1327,7 @@ main(int argc, char *argv[])
 
 	fclose(pipe_status);
 	fclose(pipe_out);
+	fclose(pipe_in);
 
 	exit(0);
 }

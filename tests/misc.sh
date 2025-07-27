@@ -13,7 +13,10 @@ while [ "$maindir" != / ]; do
 	fi
 	maindir=$(cd $maindir/../; pwd)
 done
-#fstest="${maindir}/pjdfstest"
+
+fstest="${confdir}/fstestrun"
+echo "$fstest"
+
 if ! . ${confdir}/conf; then
 	echo "not ok - could not source configuration file"
 	exit 1
@@ -36,10 +39,6 @@ requires_root()
 	esac
 }
 
-fstest() {
-    echo "$*" > /tmp/imfs_input && head -n 1 /tmp/imfs_output
-}
-
 expect() {
 	e="${1}"
 	shift
@@ -58,9 +57,9 @@ expect() {
 		fi
 	else
 		if [ -z "${todomsg}" ]; then
-			echo "not ok ${ntest} - tried '$*', expected ${e}, got ${stat}"
+			echo "not ok ${ntest} - $*, expected ${e}, got ${stat}" >&2
 		else
-			echo "not ok ${ntest} # TODO ${todomsg}"
+			echo "not ok ${ntest} - $* # TODO ${todomsg}" >&2
 		fi
 	fi
 	
@@ -127,9 +126,9 @@ test_check()
 		fi
 	else
 		if [ -z "${todomsg}" ]; then
-			echo "not ok ${ntest}"
+			echo "not ok ${ntest} | $*" >&2
 		else
-			echo "not ok ${ntest} # TODO ${todomsg}"
+			echo "not ok ${ntest} # TODO ${todomsg} | $*" >&2
 		fi
 	fi
 	todomsg=""

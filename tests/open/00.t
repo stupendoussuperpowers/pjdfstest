@@ -3,6 +3,7 @@
 # $FreeBSD: head/tools/regression/pjdfstest/tests/open/00.t 211352 2010-08-15 21:24:17Z pjd $
 
 desc="open opens (and eventually creates) a file"
+echo "${desc}, ${dir}"
 
 dir=`dirname $0`
 . ${dir}/../misc.sh
@@ -60,7 +61,9 @@ expect 0 unlink ${n0}
 echo "Update parent directory ctime/mtime if file didn't exist."
 expect 0 chown . 0 0
 time=`${fstest} stat . ctime`
+echo ""
 echo "${time}" 
+echo ""
 sleep 1
 expect 0 open ${n0} O_CREAT,O_WRONLY 0644
 atime=`${fstest} stat ${n0} atime`
