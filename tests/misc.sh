@@ -49,7 +49,7 @@ expect() {
     mesg=`echo "$output" | head -n 1`
     echo "${stat}" | ${GREP} -Eq '^'${e}'$'
 
-	if [ "$stat" -eq 0 ]; then
+	if [ "$stat" = "$e" ] || [ "$mesg" = "$e" ]; then
 		if [ -z "${todomsg}" ]; then
 			echo "ok ${ntest}"
 		else
@@ -57,7 +57,7 @@ expect() {
 		fi
 	else
 		if [ -z "${todomsg}" ]; then
-			echo "not ok ${ntest} - $*, expected ${e}, got ${stat}" >&2
+			echo "not ok ${ntest} - $*, expected ${e}, got ${stat} ${mesg}" >&2
 		else
 			echo "not ok ${ntest} - $* # TODO ${todomsg}" >&2
 		fi
@@ -142,9 +142,14 @@ todo()
 	fi
 }
 
+# namegen()
+# {
+# 	echo "pft`dd if=/dev/urandom bs=1k count=1 2>/dev/null | openssl md5 | awk '{print $NF}'`"
+# }
+
 namegen()
 {
-	echo "pjdfstest_`dd if=/dev/urandom bs=1k count=1 2>/dev/null | openssl md5 | awk '{print $NF}'`"
+    echo "pft_$(openssl rand -hex 2 | cut -c1-4)"
 }
 
 namegen_len()

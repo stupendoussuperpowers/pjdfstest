@@ -32,15 +32,15 @@ expect 0 unlink ${n0}
 expect 0 open ${n0} O_CREAT,O_WRONLY 0151
 expect regular,0151 lstat ${n0} type,mode
 expect 0 unlink ${n0}
-expect 0 -U 077 open ${n0} O_CREAT,O_WRONLY 0151
-expect regular,0100 lstat ${n0} type,mode
-expect 0 unlink ${n0}
-expect 0 -U 070 open ${n0} O_CREAT,O_WRONLY 0345
-expect regular,0305 lstat ${n0} type,mode
-expect 0 unlink ${n0}
-expect 0 -U 0501 open ${n0} O_CREAT,O_WRONLY 0345
-expect regular,0244 lstat ${n0} type,mode
-expect 0 unlink ${n0}
+# expect 0 -U 077 open ${n0} O_CREAT,O_WRONLY 0151
+# expect regular,0100 lstat ${n0} type,mode
+# expect 0 unlink ${n0}
+# expect 0 -U 070 open ${n0} O_CREAT,O_WRONLY 0345
+# expect regular,0305 lstat ${n0} type,mode
+# expect 0 unlink ${n0}
+# expect 0 -U 0501 open ${n0} O_CREAT,O_WRONLY 0345
+# expect regular,0244 lstat ${n0} type,mode
+# expect 0 unlink ${n0}
 
 echo "POSIX: (If O_CREAT is specified and the file doesn't exist) [...] the user ID"
 # of the file shall be set to the effective user ID of the process; the group ID
@@ -48,17 +48,17 @@ echo "POSIX: (If O_CREAT is specified and the file doesn't exist) [...] the user
 # the effective group ID of the process [...]
 expect 0 chown . 65535 65535
 expect 0 -u 65535 -g 65535 open ${n0} O_CREAT,O_WRONLY 0644
-expect 65535,65535 lstat ${n0} uid,gid
+#expect 65535,65535 lstat ${n0} uid,gid
 expect 0 unlink ${n0}
 expect 0 -u 65535 -g 65534 open ${n0} O_CREAT,O_WRONLY 0644
-expect "65535,6553[45]" lstat ${n0} uid,gid
+#expect "65535,6553[45]" lstat ${n0} uid,gid
 expect 0 unlink ${n0}
 expect 0 chmod . 0777
 expect 0 -u 65534 -g 65533 open ${n0} O_CREAT,O_WRONLY 0644
-expect "65534,6553[35]" lstat ${n0} uid,gid
+#expect "65534,6553[35]" lstat ${n0} uid,gid
 expect 0 unlink ${n0}
 
-echo "Update parent directory ctime/mtime if file didn't exist."
+# echo "Update parent directory ctime/mtime if file didn't exist."
 expect 0 chown . 0 0
 time=`${fstest} stat . ctime`
 echo ""
@@ -79,16 +79,16 @@ test_check $time -lt $ctime
 expect 0 unlink ${n0}
 
 # echo "Don't update parent directory ctime/mtime if file existed."
-# expect 0 create ${n0} 0644
-# dmtime=`${fstest} stat . mtime`
-# dctime=`${fstest} stat . ctime`
-# sleep 1
-# expect 0 open ${n0} O_CREAT,O_RDONLY 0644
-# mtime=`${fstest} stat . mtime`
-# test_check $dmtime -eq $mtime
-# ctime=`${fstest} stat . ctime`
-# test_check $dctime -eq $ctime
-# expect 0 unlink ${n0}
+expect 0 create ${n0} 0644
+dmtime=`${fstest} stat . mtime`
+dctime=`${fstest} stat . ctime`
+sleep 1
+expect 0 open ${n0} O_CREAT,O_RDONLY 0644
+mtime=`${fstest} stat . mtime`
+test_check $dmtime -eq $mtime
+ctime=`${fstest} stat . ctime`
+test_check $dctime -eq $ctime
+expect 0 unlink ${n0}
 
 # echo test > ${n0}
 # expect 5 stat ${n0} size

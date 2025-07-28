@@ -755,7 +755,7 @@ call_syscall(struct syscall_desc *scall, char *argv[])
 	case ACTION_CREATE:
 		rval = imfs_open(CAGE_ID, STR(0), O_CREAT | O_EXCL, (mode_t)NUM(1));
 		if (rval >= 0)
-			close(rval);
+			imfs_close(CAGE_ID, rval);
 		break;
 	case ACTION_UNLINK:
 		rval = imfs_unlink(CAGE_ID, STR(0));
@@ -912,10 +912,10 @@ call_syscall(struct syscall_desc *scall, char *argv[])
 	}
 #endif
 	case ACTION_CHMOD:
-		rval = chmod(STR(0), (mode_t)NUM(1));
+		rval = imfs_chmod(CAGE_ID, STR(0), (mode_t)NUM(1));
 		break;
 	case ACTION_FCHMOD:
-		rval = fchmod(NUM(0), (mode_t)NUM(1));
+		rval = imfs_fchmod(CAGE_ID, NUM(0), (mode_t)NUM(1));
 		break;
 #ifdef HAVE_LCHMOD
 	case ACTION_LCHMOD:
@@ -1042,10 +1042,10 @@ call_syscall(struct syscall_desc *scall, char *argv[])
 		errno = 0;
 		switch (scall->sd_action) {
 		case ACTION_PATHCONF:
-			lrval = pathconf(STR(0), name);
+			lrval = imfs_pathconf(CAGE_ID, STR(0), name);
 			break;
 		case ACTION_FPATHCONF:
-			lrval = fpathconf(NUM(0), name);
+			lrval = imfs_fpathconf(CAGE_ID, NUM(0), name);
 			break;
 #ifdef HAVE_LPATHCONF
 		case ACTION_LPATHCONF:
@@ -1163,9 +1163,10 @@ call_syscall(struct syscall_desc *scall, char *argv[])
 
 		serrno = err2str(errno);
 		fprintf(stderr, "%s returned %d\n", scall->sd_name, rval);
-		fprintf(stderr, "%s\n", serrno);
+		fprintf(stdout, "%s\n", serrno);
 		// exit(1);
 		return 1;
+		// return serrno;
 	}
 	// printf("returning=%d\n", i);
 	// return (0);
@@ -1214,6 +1215,7 @@ sigint_handler(int sig)
 	fclose(pipefd[0]);
 	fclose(pipefd[1]);
 	fclose(pipefd[2]);
+	exit(1);
 }
 
 int
@@ -1253,8 +1255,10 @@ main(int argc, char *argv[])
 	dup2(fileno(pipe_out), fileno(stdout));
 	setvbuf(stdout, NULL, _IOLBF, 0);
 
-	while (fgets(buf, sizeof(buf), pipe_in)) {
+	char *c;
+	while ((c = fgets(buf, sizeof(buf), pipe_in))) {
 		// printf("Received Command: %s", buf);
+		fprintf(stderr, "fgets: %s", c);
 		char *gids, *endp;
 		int uid, umsk, ch;
 		buf[strcspn(buf, "\n")] = '\0';
@@ -1284,7 +1288,7 @@ main(int argc, char *argv[])
 						"invalid uid '%s' - number "
 						"expected\n",
 						optarg);
-					exit(1);
+					// exit(1);
 				}
 				break;
 			case 'U':
@@ -1294,7 +1298,7 @@ main(int argc, char *argv[])
 						"invalid umask '%s' - number "
 						"expected\n",
 						optarg);
-					exit(1);
+					// exit(1);
 				}
 				break;
 			default:
@@ -1318,12 +1322,16 @@ main(int argc, char *argv[])
 			exitstatus = call_syscall(scall, tokens);
 		}
 
-		fprintf(pipe_status, "%d\n\n", exitstatus);
+		fprintf(pipe_status, "%d\n", exitstatus);
 		// printf("%d\n\n", exitstatus);
 		printf("%d\n", exitstatus);
 		fflush(pipe_out);
 		fflush(pipe_status);
+		fprintf(stderr, "exit status: %d\n", exitstatus);
+		fflush(stderr);
 	}
+
+	perror("end of this loop:");
 
 	fclose(pipe_status);
 	fclose(pipe_out);

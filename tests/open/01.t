@@ -14,6 +14,7 @@ n1=`namegen`
 
 expect 0 mkdir ${n0} 0755
 for type in regular fifo block char socket; do
+    # echo "creating $type $n0/$n1"
 	create_file ${type} ${n0}/${n1}
 	expect ENOTDIR open ${n0}/${n1}/test O_RDONLY
 	expect ENOTDIR open ${n0}/${n1}/test O_CREAT 0644
