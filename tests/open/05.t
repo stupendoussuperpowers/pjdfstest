@@ -18,8 +18,6 @@ expect 0 mkdir ${n0} 0755
 # cd ${n0}
 n1="$n0/$n1"
 
-echo "${n1}/${n2}"
-
 expect 0 mkdir ${n1} 0755
 expect 0 chown ${n1} 65534 65534
 expect 0 -u 65534 -g 65534 create ${n1}/${n2} 0644
