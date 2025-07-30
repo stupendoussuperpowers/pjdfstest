@@ -46,47 +46,51 @@ echo "POSIX: (If O_CREAT is specified and the file doesn't exist) [...] the user
 # of the file shall be set to the effective user ID of the process; the group ID
 # of the file shall be set to the group ID of the file's parent directory or to
 # the effective group ID of the process [...]
-expect 0 chown . 65535 65535
+expect 0 chown ${n1} 65535 65535
 expect 0 -u 65535 -g 65535 open ${n0} O_CREAT,O_WRONLY 0644
 #expect 65535,65535 lstat ${n0} uid,gid
 expect 0 unlink ${n0}
 expect 0 -u 65535 -g 65534 open ${n0} O_CREAT,O_WRONLY 0644
 #expect "65535,6553[45]" lstat ${n0} uid,gid
 expect 0 unlink ${n0}
-expect 0 chmod . 0777
+expect 0 chmod ${n1} 0777
 expect 0 -u 65534 -g 65533 open ${n0} O_CREAT,O_WRONLY 0644
 #expect "65534,6553[35]" lstat ${n0} uid,gid
 expect 0 unlink ${n0}
 
 # echo "Update parent directory ctime/mtime if file didn't exist."
-expect 0 chown . 0 0
-time=`${fstest} stat . ctime`
+expect 0 chown ${n1} 0 0
+time=`${fstest} stat ${n1} ctime`
 echo ""
 echo "${time}" 
 echo ""
 sleep 1
 expect 0 open ${n0} O_CREAT,O_WRONLY 0644
 atime=`${fstest} stat ${n0} atime`
+echo "stat n0 atime mtime ctime"
 test_check $time -lt $atime
 mtime=`${fstest} stat ${n0} mtime`
 test_check $time -lt $mtime
 ctime=`${fstest} stat ${n0} ctime`
 test_check $time -lt $ctime
-mtime=`${fstest} stat . mtime`
+
+echo "stat ${n1} mtime ctime"
+
+mtime=`${fstest} stat ${n1} mtime`
 test_check $time -lt $mtime
-ctime=`${fstest} stat . ctime`
+ctime=`${fstest} stat ${n1} ctime`
 test_check $time -lt $ctime
 expect 0 unlink ${n0}
 
 # echo "Don't update parent directory ctime/mtime if file existed."
 expect 0 create ${n0} 0644
-dmtime=`${fstest} stat . mtime`
-dctime=`${fstest} stat . ctime`
+dmtime=`${fstest} stat ${n1} mtime`
+dctime=`${fstest} stat ${n1} ctime`
 sleep 1
 expect 0 open ${n0} O_CREAT,O_RDONLY 0644
-mtime=`${fstest} stat . mtime`
+mtime=`${fstest} stat ${n1} mtime`
 test_check $dmtime -eq $mtime
-ctime=`${fstest} stat . ctime`
+ctime=`${fstest} stat ${n1} ctime`
 test_check $dctime -eq $ctime
 expect 0 unlink ${n0}
 

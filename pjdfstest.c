@@ -1109,7 +1109,7 @@ call_syscall(struct syscall_desc *scall, char *argv[])
 		rval = 0;
 		bzero(buf, sizeof(buf));
 		do {
-			r = pread(fd, buf + rval, count - rval, off + rval);
+			r = imfs_pread(CAGE_ID, fd, buf + rval, count - rval, off + rval);
 			fprintf(stderr, "read %zd bytes\n", r);
 			if (r < 0) {
 				rval = r;
@@ -1124,10 +1124,10 @@ call_syscall(struct syscall_desc *scall, char *argv[])
 		break;
 	}
 	case ACTION_PWRITE:
-		rval = pwrite(NUM(0), STR(1), strlen(STR(1)), NUM(2));
+		rval = imfs_pwrite(CAGE_ID, NUM(0), STR(1), strlen(STR(1)), NUM(2));
 		break;
 	case ACTION_WRITE:
-		rval = write(NUM(0), STR(1), strlen(STR(1)));
+		rval = imfs_write(CAGE_ID, NUM(0), STR(1), strlen(STR(1)));
 		break;
 #ifdef HAVE_UTIMENSAT
 	case ACTION_UTIMENSAT:
